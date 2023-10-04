@@ -52,6 +52,11 @@ class JsonNullLiteral(JsonToken):
         super().__init__("Null Literal")
         self.value = "null"
 
+def parse_end_of_input(input_string):
+    if not input_string:
+        return True, input_string  # Fail if the string is empty
+    return None, input_string  # No match found
+
 def parse_test(predicate):
     def test(input_string):
         if not input_string:
@@ -146,7 +151,15 @@ parse_whitespace = parse_any_of(whitespace)
 
 parse_throw_whitespace = many_combinator(parse_whitespace)(lambda _: None)
 
-parse_json = and_combinator(parse_throw_whitespace, parse_literal, parse_throw_whitespace)(lambda r: r[1])
+parse_digit = parse_any_of(['1','2','3','4','5','6','7','8','9','0'])
+
+parse_dot = parse_char('.')
+
+parse_number = or_combinator(and_combinator(many_combinator(parse_digit)(lambda r: r), parse_dot, parse_digit, many_combinator(parse_digit)(lambda r: r))(lambda r: r), many_combinator(parse_digit)(lambda r: r))(lambda r: r)
+
+parse_value = or_combinator(parse_literal, parse_number)(lambda r: r)
+
+parse_json = and_combinator(parse_throw_whitespace, parse_value, parse_throw_whitespace, parse_end_of_input)(lambda r: r[1])
 
 def printResult(output):
     result, remaining = output

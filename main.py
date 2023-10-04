@@ -10,7 +10,11 @@ class JsonToken:
     def __init__(self, type):
         self.type = type
     def __repr__(self):
-        attributes = ', '.join(f"{k}='{v}'" for k, v in vars(self).items())
+        def formatValue(value):
+            if(isinstance(value, (JsonToken, list))):
+                return repr(value)
+            return value
+        attributes = ', '.join(f"{k}='{formatValue(v)}'" for k, v in vars(self).items())
         return f"{self.__class__.__name__}({attributes})"
         
 class JsonObject(JsonToken):
@@ -47,26 +51,21 @@ class JsonNullLiteral(JsonToken):
     def __init__(self):
         super().__init__("Null Literal")
         self.value = "null"
-        
-def parse_char(target_char, input_string):
-    if not input_string:
-        return None, input_string  # Fail if the string is empty
 
-    first_char = input_string[0]
-    if first_char == target_char:
-        return first_char, input_string[1:]  # Return the matched char and remaining string
-    else:
-        return None, input_string  # No match found
+def parse_test(predicate):
+    def test(input_string):
+        if not input_string:
+            return None, input_string  # Fail if the string is empty
+    
+        first_char = input_string[0]
+        if predicate(first_char):
+            return first_char, input_string[1:]  # Return the matched char and remaining string
+        else:
+            return None, input_string  # No match found
+    return test
 
-def parse_any_of(chars, input_string):
-    if not input_string:
-        return None, input_string  # Fail if the string is empty
-
-    first_char = input_string[0]
-    if first_char in chars:
-        return first_char, input_string[1:]  # Return the matched char and remaining string
-    else:
-        return None, input_string  # No match found
+parse_char = lambda char: parse_test(lambda inputChar: inputChar == char)
+parse_any_of = lambda chars: parse_test(lambda inputChar: inputChar in chars)
 
 return_parser = lambda parser: lambda result_formatter: lambda input_string: parser(result_formatter, input_string)
 
@@ -112,28 +111,38 @@ def many_combinator(parser):
     return return_parser(combined_parser)
 
 # Define the individual parsers
-parse_a = lambda s: parse_char('a', s)
-parse_e = lambda s: parse_char('e', s)
-parse_f = lambda s: parse_char('f', s)
-parse_l = lambda s: parse_char('l', s)
-parse_n = lambda s: parse_char('n', s)
-parse_r = lambda s: parse_char('r', s)
-parse_s = lambda s: parse_char('s', s)
-parse_t = lambda s: parse_char('t', s)
-parse_u = lambda s: parse_char('u', s)
+parse_a = parse_char('a')
+parse_e = parse_char('e')
+parse_f = parse_char('f')
+parse_l = parse_char('l')
+parse_n = parse_char('n')
+parse_r = parse_char('r')
+parse_s = parse_char('s')
+parse_t = parse_char('t')
+parse_u = parse_char('u')
+
+parse_quotation_mark = parse_char("\"")
+parse_reverse_solidus = parse_char("\\")
+parse_solidus = parse_char("/")
+parse_backspace = parse_char("\b")
+parse_form_feed = parse_char("\f")
+parse_line_feed = parse_char("\n")
+parse_carriage_return = parse_char("\r")
+parse_tab = parse_char("\t")
 
 # Combine them using the and_combinator
 parse_true = and_combinator(parse_t, parse_r, parse_u, parse_e)(lambda _: JsonTrueLiteral())
 parse_false = and_combinator(parse_f, parse_a, parse_l, parse_s, parse_e)(lambda _: JsonFalseLiteral())
 parse_null = and_combinator(parse_n, parse_u, parse_l, parse_l)(lambda _: JsonNullLiteral())
 
+escape_parsers = [parse_quotation_mark,parse_reverse_solidus,parse_solidus,parse_backspace,parse_form_feed,parse_line_feed,parse_carriage_return,parse_tab]
+
+parse_escape_sequence = and_combinator(parse_reverse_solidus, or_combinator(*escape_parsers)(lambda r: r))(lambda r: r[1])
 
 # Combine them using the or_combinator to parse the json literal
 parse_literal = or_combinator(parse_true, parse_false, parse_null)(lambda r: r)
 
-parse_whitespace = lambda s: parse_any_of(whitespace, s)
-
-#parse_string = and_combinator(lambda s: parse_char('"', s), parse_string_internal, lambda s: parse_char('"', s))
+parse_whitespace = parse_any_of(whitespace)
 
 parse_throw_whitespace = many_combinator(parse_whitespace)(lambda _: None)
 
@@ -147,3 +156,5 @@ printResult(parse_json(" apple "))
 printResult(parse_json(" true "))
 printResult(parse_json("   false "))
 printResult(parse_json(" null "))
+printResult(parse_json(' "abc" '))
+printResult(parse_json(' 123.456 '))

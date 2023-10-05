@@ -142,10 +142,12 @@ parse_null = and_combinator(parse_n, parse_u, parse_l, parse_l)(lambda _: JsonNu
 
 escape_parsers = [parse_quotation_mark,parse_reverse_solidus,parse_solidus,parse_backspace,parse_form_feed,parse_line_feed,parse_carriage_return,parse_tab]
 
-parse_escape_sequence = and_combinator(parse_reverse_solidus, or_combinator(*escape_parsers)(lambda r: r))(lambda r: r[1])
+identity = lambda r: r
+
+parse_escape_sequence = and_combinator(parse_reverse_solidus, or_combinator(*escape_parsers)(identity))(lambda r: r[1])
 
 # Combine them using the or_combinator to parse the json literal
-parse_literal = or_combinator(parse_true, parse_false, parse_null)(lambda r: r)
+parse_literal = or_combinator(parse_true, parse_false, parse_null)(identity)
 
 parse_whitespace = parse_any_of(whitespace)
 
@@ -155,9 +157,15 @@ parse_digit = parse_any_of(['1','2','3','4','5','6','7','8','9','0'])
 
 parse_dot = parse_char('.')
 
-parse_number = or_combinator(and_combinator(many_combinator(parse_digit)(lambda r: r), parse_dot, parse_digit, many_combinator(parse_digit)(lambda r: r))(lambda r: r), many_combinator(parse_digit)(lambda r: r))(lambda r: r)
+def array_to_string(arr):
+    result = "";
+    for i in arr:
+      result += array_to_string(i) if isinstance(i, list) else i
+    return result
 
-parse_value = or_combinator(parse_literal, parse_number)(lambda r: r)
+parse_number = or_combinator(and_combinator(many_combinator(parse_digit)(identity), parse_dot, parse_digit, many_combinator(parse_digit)(identity))(array_to_string), many_combinator(parse_digit)(array_to_string))(lambda r: JsonNumber(r))
+
+parse_value = or_combinator(parse_literal, parse_number)(identity)
 
 parse_json = and_combinator(parse_throw_whitespace, parse_value, parse_throw_whitespace, parse_end_of_input)(lambda r: r[1])
 

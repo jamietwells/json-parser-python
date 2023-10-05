@@ -177,15 +177,13 @@ parse_number = or_combinator(and_combinator(many_combinator(parse_digit)(identit
 
 parse_string = and_combinator(parse_quotation_mark, many_combinator(parse_test(lambda c: c != '"'))(identity), parse_quotation_mark)(lambda r: JsonString(array_to_string(r[1])))
 
-parse_value = or_combinator(parse_literal, parse_string, parse_number)(identity)
+def parse_value(s): 
+    return or_combinator(parse_array, parse_literal, parse_string, parse_number)(identity)(s)
 
-parse_empty_array = and_combinator(parse_begin_array, parse_end_array)(lambda _: JsonArray([]))
-
-parse_filled_array = and_combinator(parse_begin_array, parse_value, many_combinator(and_combinator(parse_value_separator, parse_value)(lambda r: r[1]))(identity), parse_end_array)(lambda v: JsonArray([v[1], *v[2]]))
-
-parse_array = or_combinator(parse_empty_array, parse_filled_array)(identity)
-
-parse_value = or_combinator(parse_array, parse_literal, parse_string, parse_number)(identity)
+def parse_array(s):
+    parse_empty_array = and_combinator(parse_begin_array, parse_end_array)(lambda _: JsonArray([]))
+    parse_filled_array = and_combinator(parse_begin_array, parse_value, many_combinator(and_combinator(parse_value_separator, parse_value)(lambda r: r[1]))(identity), parse_end_array)(lambda v: JsonArray([v[1], *v[2]]))
+    return or_combinator(parse_empty_array, parse_filled_array)(identity)(s)
 
 parse_json = and_combinator(parse_throw_whitespace, parse_value, parse_throw_whitespace, parse_end_of_input)(lambda r: r[1])
 
@@ -200,5 +198,6 @@ printResult(parse_json(" null "))
 printResult(parse_json(' "abc" '))
 printResult(parse_json(' 123.456 '))
 printResult(parse_json(' 123 '))
-printResult(parse_json(' [ ] '))
+printResult(parse_json(' [ ] ')) 
 printResult(parse_json(' [true,false , null , "abc",123.456,123  ] '))
+printResult(parse_json(' [ [1, 2],  3 ] '))

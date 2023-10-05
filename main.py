@@ -3,7 +3,7 @@ begin_object = '{'
 end_array = ']'
 end_object = '}'
 name_separator = ':'
-value_separator = ';'
+value_separator = ','
 whitespace = [' ', '\t', '\n', '\r']
 
 class JsonToken:
@@ -18,9 +18,9 @@ class JsonToken:
         return f"{self.__class__.__name__}({attributes})"
         
 class JsonObject(JsonToken):
-    def __init__(self, value):
+    def __init__(self, properties):
         super().__init__("Object")
-        self.value = value
+        self.properties = properties
         
 class JsonArray(JsonToken):
     def __init__(self, values):
@@ -153,6 +153,16 @@ parse_whitespace = parse_any_of(whitespace)
 
 parse_throw_whitespace = many_combinator(parse_whitespace)(lambda _: None)
 
+def control_char(parser):
+    return and_combinator(parse_throw_whitespace, parser, parse_throw_whitespace)(lambda r: r[1])
+    
+parse_begin_array = control_char(parse_char(begin_array))
+parse_begin_object = control_char(parse_char(begin_object))
+parse_end_array = control_char(parse_char(end_array))
+parse_end_object = control_char(parse_char(end_object))
+parse_name_separator = control_char(parse_char(name_separator))
+parse_value_separator = control_char(parse_char(value_separator))
+
 parse_digit = parse_any_of(['1','2','3','4','5','6','7','8','9','0'])
 
 parse_dot = parse_char('.')
@@ -169,6 +179,14 @@ parse_string = and_combinator(parse_quotation_mark, many_combinator(parse_test(l
 
 parse_value = or_combinator(parse_literal, parse_string, parse_number)(identity)
 
+parse_empty_array = and_combinator(parse_begin_array, parse_end_array)(lambda _: JsonArray([]))
+
+parse_filled_array = and_combinator(parse_begin_array, parse_value, many_combinator(and_combinator(parse_value_separator, parse_value)(lambda r: r[1]))(identity), parse_end_array)(lambda v: JsonArray([v[1], *v[2]]))
+
+parse_array = or_combinator(parse_empty_array, parse_filled_array)(identity)
+
+parse_value = or_combinator(parse_array, parse_literal, parse_string, parse_number)(identity)
+
 parse_json = and_combinator(parse_throw_whitespace, parse_value, parse_throw_whitespace, parse_end_of_input)(lambda r: r[1])
 
 def printResult(output):
@@ -182,3 +200,5 @@ printResult(parse_json(" null "))
 printResult(parse_json(' "abc" '))
 printResult(parse_json(' 123.456 '))
 printResult(parse_json(' 123 '))
+printResult(parse_json(' [ ] '))
+printResult(parse_json(' [true,false , null , "abc",123.456,123  ] '))

@@ -163,7 +163,7 @@ def array_to_string(arr):
       result += array_to_string(i) if isinstance(i, list) else i
     return result
 
-parse_number = or_combinator(and_combinator(many_combinator(parse_digit)(identity), parse_dot, parse_digit, many_combinator(parse_digit)(identity))(array_to_string), many_combinator(parse_digit)(array_to_string))(lambda r: JsonNumber(r))
+parse_number = or_combinator(and_combinator(many_combinator(parse_digit)(identity), parse_dot, parse_digit, many_combinator(parse_digit)(identity))(identity), many_combinator(parse_digit)(identity))(lambda r: JsonNumber(array_to_string(r)))
 
 parse_value = or_combinator(parse_literal, parse_number)(identity)
 
@@ -179,3 +179,4 @@ printResult(parse_json("   false "))
 printResult(parse_json(" null "))
 printResult(parse_json(' "abc" '))
 printResult(parse_json(' 123.456 '))
+printResult(parse_json(' 123 '))

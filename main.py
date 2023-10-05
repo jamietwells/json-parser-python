@@ -165,7 +165,9 @@ def array_to_string(arr):
 
 parse_number = or_combinator(and_combinator(many_combinator(parse_digit)(identity), parse_dot, parse_digit, many_combinator(parse_digit)(identity))(identity), many_combinator(parse_digit)(identity))(lambda r: JsonNumber(array_to_string(r)))
 
-parse_value = or_combinator(parse_literal, parse_number)(identity)
+parse_string = and_combinator(parse_quotation_mark, many_combinator(parse_test(lambda c: c != '"'))(identity), parse_quotation_mark)(lambda r: JsonString(array_to_string(r[1])))
+
+parse_value = or_combinator(parse_literal, parse_string, parse_number)(identity)
 
 parse_json = and_combinator(parse_throw_whitespace, parse_value, parse_throw_whitespace, parse_end_of_input)(lambda r: r[1])
 

@@ -9,43 +9,56 @@ whitespace = [' ', '\t', '\n', '\r']
 class JsonToken:
     def __init__(self, type):
         self.type = type
-    def __repr__(self):
-        def formatValue(value):
-            if(isinstance(value, (JsonToken, list))):
-                return repr(value)
-            return value
-        attributes = ', '.join(f"{k}='{formatValue(v)}'" for k, v in vars(self).items())
-        return f"{self.__class__.__name__}({attributes})"
+    def to_dictionary(self):
+        return None
         
 class JsonObject(JsonToken):
     def __init__(self, properties):
         super().__init__("Object")
         self.properties = properties
-        
+    def to_dictionary(self):
+        result = {}
+        for kvp in self.properties:
+            result[kvp.name] = kvp.value.to_dictionary()
+        return result
+
 class JsonArray(JsonToken):
     def __init__(self, values):
         super().__init__("Array")
         self.values = values
-        
+    def to_dictionary(self):
+        result = []
+        for item in self.values:
+            result.append(item.to_dictionary())  
+        return result
+    
 class JsonNumber(JsonToken):
     def __init__(self, value):
         super().__init__("Number")
         self.value = value
-
+    def to_dictionary(self):
+        return float(self.value)
+    
 class JsonString(JsonToken):
     def __init__(self, value):
         super().__init__("String")
         self.value = value
-
+    def to_dictionary(self):
+        return self.value
+    
 class JsonFalseLiteral(JsonToken):
     def __init__(self):
         super().__init__("False Literal")
         self.value = "false"
-
+    def to_dictionary(self):
+        return False
+    
 class JsonTrueLiteral(JsonToken):
     def __init__(self):
         super().__init__("True Literal")
         self.value = "true"
+    def to_dictionary(self):
+        return True
 
 class JsonNullLiteral(JsonToken):
     def __init__(self):
@@ -189,7 +202,8 @@ parse_json = and_combinator(parse_throw_whitespace, parse_value, parse_throw_whi
 
 def printResult(output):
     result, remaining = output
-    print(repr(result))
+    if result:
+        print(result.to_dictionary())
     
 printResult(parse_json(" apple "))
 printResult(parse_json(" true "))

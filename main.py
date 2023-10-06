@@ -181,7 +181,7 @@ parse_digit = parse_any_of(['1','2','3','4','5','6','7','8','9','0'])
 parse_dot = parse_char('.')
 
 def array_to_string(arr):
-    result = "";
+    result = ""
     for i in arr:
       result += array_to_string(i) if isinstance(i, list) else i
     return result

@@ -6,6 +6,11 @@ name_separator = ':'
 value_separator = ','
 whitespace = [' ', '\t', '\n', '\r']
 
+class KeyValuePair:
+    def __init__(self, name, value):
+        self.name = name
+        self.value = value
+
 class JsonToken:
     def __init__(self, type):
         self.type = type
@@ -191,12 +196,18 @@ parse_number = or_combinator(and_combinator(many_combinator(parse_digit)(identit
 parse_string = and_combinator(parse_quotation_mark, many_combinator(parse_test(lambda c: c != '"'))(identity), parse_quotation_mark)(lambda r: JsonString(array_to_string(r[1])))
 
 def parse_value(s): 
-    return or_combinator(parse_array, parse_literal, parse_string, parse_number)(identity)(s)
+    return or_combinator(parse_array, parse_object, parse_literal, parse_string, parse_number)(identity)(s)
 
 def parse_array(s):
     parse_empty_array = and_combinator(parse_begin_array, parse_end_array)(lambda _: JsonArray([]))
     parse_filled_array = and_combinator(parse_begin_array, parse_value, many_combinator(and_combinator(parse_value_separator, parse_value)(lambda r: r[1]))(identity), parse_end_array)(lambda v: JsonArray([v[1], *v[2]]))
     return or_combinator(parse_empty_array, parse_filled_array)(identity)(s)
+
+def parse_object(s):
+    parse_empty_object = and_combinator(parse_begin_object, parse_end_object)(lambda _: JsonObject([]))
+    parse_object_value = and_combinator(parse_string, parse_name_separator, parse_value)(lambda r: KeyValuePair(r[0].value, r[2]))
+    parse_filled_object = and_combinator(parse_begin_object, parse_object_value, many_combinator(and_combinator(parse_value_separator, parse_object_value)(lambda r: r[1]))(identity), parse_end_object)(lambda v: JsonObject([v[1], *v[2]]))
+    return or_combinator(parse_empty_object, parse_filled_object)(identity)(s)
 
 parse_json = and_combinator(parse_throw_whitespace, parse_value, parse_throw_whitespace, parse_end_of_input)(lambda r: r[1])
 
@@ -215,3 +226,5 @@ printResult(parse_json(' 123 '))
 printResult(parse_json(' [ ] ')) 
 printResult(parse_json(' [true,false , null , "abc",123.456,123  ] '))
 printResult(parse_json(' [ [1, 2],  3 ] '))
+printResult(parse_json(' { } '))
+printResult(parse_json(' { "Message": "Hello world!" } '))

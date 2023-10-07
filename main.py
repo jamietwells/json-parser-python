@@ -211,20 +211,10 @@ def parse_object(s):
 
 parse_json = and_combinator(parse_throw_whitespace, parse_value, parse_throw_whitespace, parse_end_of_input)(lambda r: r[1])
 
-def printResult(output):
-    result, remaining = output
-    if result:
-        print(result.to_dictionary())
-    
-printResult(parse_json(" apple "))
-printResult(parse_json(" true "))
-printResult(parse_json("   false "))
-printResult(parse_json(" null "))
-printResult(parse_json(' "abc" '))
-printResult(parse_json(' 123.456 '))
-printResult(parse_json(' 123 '))
-printResult(parse_json(' [ ] ')) 
-printResult(parse_json(' [true,false , null , "abc",123.456,123  ] '))
-printResult(parse_json(' [ [1, 2],  3 ] '))
-printResult(parse_json(' { } '))
-printResult(parse_json(' { "Message": "Hello world!" } '))
+f = open("data.json", "r")
+data = f.read()
+f.close()
+
+data2, _ = parse_json(data)
+
+print(data2.to_dictionary())

@@ -1,0 +1,35 @@
+{
+    "character": {
+        "name": "Mario",
+        "origin": "Super Mario Bros.",
+        "species": "Human",
+        "abilities": [
+            "Jumping",
+            "Running",
+            "Fireball throwing",
+            "Flying (with power-ups)"
+        ],
+        "gamesAppearedIn": [
+            {
+                "title": "Super Mario 64",
+                "releaseYear": 1996,
+                "platforms": [
+                    "Nintendo 64",
+                    "DS"
+                ]
+            },
+            {
+                "title": "Super Mario Odyssey",
+                "releaseYear": 2017,
+                "platforms": [
+                    "Nintendo Switch"
+                ]
+            }
+        ],
+        "hasBrother": true,
+        "enemy": "Bowser",
+        "coinsCollected": 9234,
+        "princessSaved": false,
+        "sidekick": null
+    }
+}

@@ -193,7 +193,18 @@ def array_to_string(arr):
 
 parse_number = or_combinator(and_combinator(many_combinator(parse_digit)(identity), parse_dot, parse_digit, many_combinator(parse_digit)(identity))(identity), and_combinator(parse_digit, many_combinator(parse_digit)(identity))(identity))(lambda r: JsonNumber(array_to_string(r)))
 
-parse_string = and_combinator(parse_quotation_mark, many_combinator(parse_test(lambda c: c != '"'))(identity), parse_quotation_mark)(lambda r: JsonString(array_to_string(r[1])))
+parse_string_character = parse_test(lambda c: c not in ['"', '\\'])
+
+def get_escape_character(r):
+    char = r[1]
+    if char == '"':
+        return '"'
+    if char == '\\':
+        return '\\'
+
+parse_escaped_character = and_combinator(parse_reverse_solidus, or_combinator(parse_reverse_solidus, parse_quotation_mark)(identity))(get_escape_character)
+
+parse_string = and_combinator(parse_quotation_mark, many_combinator(or_combinator(parse_string_character, parse_escaped_character)(identity))(identity), parse_quotation_mark)(lambda r: JsonString(array_to_string(r[1])))
 
 def parse_value(s): 
     return or_combinator(parse_array, parse_object, parse_literal, parse_string, parse_number)(identity)(s)
